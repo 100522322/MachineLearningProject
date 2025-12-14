@@ -8,6 +8,7 @@ class DataLoader:
         self.data = None
     
     def load_data(self, nrows=None):
+        """Loads the data from the filepath inserted on init"""
         if not os.path.exists(self.filepath):
             raise FileNotFoundError(f"File not found: {self.filepath}")
 
@@ -15,9 +16,11 @@ class DataLoader:
         return self.data
     
     def clean_data(self):
+        """Eliminates the columns that are not needed"""
         if self.data is None:
             raise ValueError("Data not loaded")
-        
+
+        # TODO select what rows we have to drop
         drop_cols = ['id', 'url', 'region_url', 'image_url', 'description', 'lat', 'long', 'VIN', 'region', 'model']
 
         self.data = self.data.drop(columns=drop_cols, errors='ignore')
@@ -27,18 +30,20 @@ class DataLoader:
 
         # Filter outliers
         self.data = self.data[(self.data['price'] > 500) and (self.data['price'] < 100000)]
-        self.data = self.data((self.data['year'] > 1980))
+        self.data = self.data[(self.data['year'] > 1980)]
         self.data = self.data[(self.data['odometer'] < 400000)]
 
         return self.data
     
     def save_clean_data(self, output_filepath):
+        """Saves the cleaned data to the filepath inserted on save"""
         if self.data is None:
             raise ValueError("Data not loaded or cleaned")
         
         self.data.to_csv(output_filepath, index=False)
     
     def get_data_split(self, target='price', test_size=0.2):
+        """Creates the X and y data and split it"""
         X = self.data.drop(columns=[target])
         y = self.data[target]
 
