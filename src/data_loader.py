@@ -13,7 +13,7 @@ class DataLoader:
             raise FileNotFoundError(f"File not found: {self.filepath}")
 
         self.data = pd.read_csv(self.filepath, nrows=nrows)
-        return self.data
+        return self
     
     def clean_data(self):
         """Eliminates the columns that are not needed"""
@@ -33,7 +33,7 @@ class DataLoader:
         self.data = self.data[(self.data['year'] > 1980)]
         self.data = self.data[(self.data['odometer'] < 400000)]
 
-        return self.data
+        return self
     
     def save_clean_data(self, output_filepath):
         """Saves the cleaned data to the filepath inserted on save"""
@@ -41,6 +41,8 @@ class DataLoader:
             raise ValueError("Data not loaded or cleaned")
         
         self.data.to_csv(output_filepath, index=False)
+
+        return self
     
     def get_data_split(self, target='price', test_size=0.2):
         """Creates the X and y data and split it"""
