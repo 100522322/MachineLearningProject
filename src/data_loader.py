@@ -29,7 +29,7 @@ class DataLoader:
         self.data = self.data.dropna(subset=['price'])
 
         # Filter outliers
-        self.data = self.data[(self.data['price'] > 500) and (self.data['price'] < 100000)]
+        self.data = self.data[(self.data['price'] > 500) & (self.data['price'] < 100000)]
         self.data = self.data[(self.data['year'] > 1980)]
         self.data = self.data[(self.data['odometer'] < 400000)]
 
