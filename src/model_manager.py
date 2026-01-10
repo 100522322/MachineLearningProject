@@ -6,8 +6,7 @@ import json
 from sklearn.model_selection import KFold
 from sklearn.metrics import mean_absolute_error, mean_squared_error, accuracy_score, f1_score
 from sklearn.base import clone
-from sklearn.pipeline import Pipeline
-from src.preprocessing import get_preprocessor
+
 
 class ModelManager:
 
@@ -69,8 +68,6 @@ class ModelManager:
         print("Starting training...")
         for fold, (train_index, test_index) in enumerate(cv.split(X)):
             X_train, X_test = X[train_index], X[test_index]
-
-            y_clf_train, y_clf_test = y_clf[train_index], y_clf[test_index]
             y_reg_train, y_reg_test = y_reg[train_index], y_reg[test_index]
 
             print(f"=== Fold {fold+1}/{splits_n} ===")
@@ -81,14 +78,8 @@ class ModelManager:
             for name, model in self.models_reg.items():
                 print(f"\t\t{name}")
                 model_fold = clone(model)
-                # Create pipeline with preprocessor
-                full_pipeline = Pipeline(steps=[
-                    ('preprocessor', get_preprocessor()),
-                    ('model', model_fold)
-                ])
-                full_pipeline.fit(X_train, y_reg_train)
-
-                y_pred = full_pipeline.predict(X_test)
+                model_fold.fit(X_train, y_reg_train)
+                y_pred = model_fold.predict(X_test)
 
                 mae = mean_absolute_error(y_reg_test, y_pred)
                 rmse = np.sqrt(mean_squared_error(y_reg_test, y_pred))
@@ -106,17 +97,12 @@ class ModelManager:
             for name, model in self.models_clf.items():
                 print(f"\t\t{name}")
                 model_fold = clone(model)
-                # Create pipeline with preprocessor
-                full_pipeline = Pipeline(steps=[
-                    ('preprocessor', get_preprocessor()),
-                    ('model', model_fold)
-                ])
-                full_pipeline.fit(X_train, y_clf_train)
+                model_fold.fit(X_train, y_clf[train_index])
 
-                y_pred = full_pipeline.predict(X_test)
+                y_pred = model_fold.predict(X_test)
 
-                acc = accuracy_score(y_clf_test, y_pred)
-                f1 = f1_score(y_clf_test, y_pred)
+                acc = accuracy_score(y_clf[test_index], y_pred)
+                f1 = f1_score(y_clf[test_index], y_pred)
 
                 results["Classifiers"][name]["Accuracy"].append(acc)
                 results["Classifiers"][name]["F1"].append(f1)
