@@ -24,6 +24,7 @@ class ModelManager:
         self.results = None
 
     def save_model(self, model, path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         joblib.dump(model, path)
 
     def load_model(self, path):
@@ -52,7 +53,7 @@ class ModelManager:
         print(f"Results saved to {path}")
 
     def train_test_models(self, X, y_clf, y_reg, splits_n=5):
-        cv = KFold(n_splits=splits_n, shuffle=True)
+        cv = KFold(n_splits=splits_n, shuffle=True, random_state=42)
         results = {
             "Regressors":{
                 name: {"MAE": [], "RMSE": []}
@@ -102,7 +103,7 @@ class ModelManager:
                 y_pred = model_fold.predict(X_test)
 
                 acc = accuracy_score(y_clf[test_index], y_pred)
-                f1 = f1_score(y_clf[test_index], y_pred)
+                f1 = f1_score(y_clf[test_index], y_pred, average='weighted')
 
                 results["Classifiers"][name]["Accuracy"].append(acc)
                 results["Classifiers"][name]["F1"].append(f1)
@@ -168,5 +169,5 @@ class ModelManager:
 
             fig.suptitle(group_name, fontsize=14)
             plt.tight_layout()
-            plt.show()
             plt.savefig("./metrics/foo.png")
+            plt.show()
