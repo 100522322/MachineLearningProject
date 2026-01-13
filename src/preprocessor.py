@@ -47,7 +47,15 @@ class Preprocessor:
         )
 
         self.X = preprocessor.fit_transform(X)
-        self.y = y.to_numpy()
+        
+        # Regression target
+        y_reg = y.to_numpy()
+
+        # Classification target (3 classes: Low, Medium, High)
+        y_clf = pd.qcut(y, q=3, labels=[0, 1, 2]).to_numpy()
+
+        # Save both targets
+        self.y = np.stack([y_reg, y_clf])
 
         return self
     

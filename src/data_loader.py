@@ -28,7 +28,7 @@ class DataLoader:
 
         print("\nCleaning data...")
         # TODO select what rows we have to drop
-        drop_cols = ['id', 'url', 'region_url', 'image_url', 'description', 'lat', 'long',
+        drop_cols = ['url', 'region_url', 'image_url', 'description', 'lat', 'long',
                       'VIN', 'region', 'model', 'posting_date']
 
         tqdm.write("Dropping unnecessary columns...")

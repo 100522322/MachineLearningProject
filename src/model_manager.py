@@ -3,22 +3,33 @@ import joblib
 import matplotlib.pyplot as plt
 import os
 import json
+
 from sklearn.model_selection import KFold
-from sklearn.metrics import mean_absolute_error, mean_squared_error, accuracy_score, f1_score
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier, GradientBoostingRegressor, GradientBoostingClassifier
+from sklearn.metrics import mean_absolute_error, mean_squared_error, accuracy_score, f1_score, r2_score
 from sklearn.base import clone
 
 
 class ModelManager:
 
-    def __init__(self):
+    def __init__(self, r_state=None):
         """
         {"NAME": CLASS()}
         """
         self.models_reg = {
+            
+            "LinearRegression": LinearRegression(),
+            "RandomForestRegressor": RandomForestRegressor(random_state=r_state),
+            "GradientBoostingRegressor": GradientBoostingRegressor(random_state=r_state)
 
         }
 
         self.models_clf = {
+            "LogisticRegression": LogisticRegression(random_state=r_state),
+            "RandomForestClassifier": RandomForestClassifier(random_state=r_state),
+            "GradientBoostingClassifier": GradientBoostingClassifier(random_state=r_state)
+
 
         }
         self.results = None
@@ -54,22 +65,22 @@ class ModelManager:
 
     def train_test_models(self, X, y_clf, y_reg, splits_n=5):
         cv = KFold(n_splits=splits_n, shuffle=True, random_state=42)
-        results = {
+        raw_results = {
             "Regressors":{
-                name: {"MAE": [], "RMSE": []}
-                for name in self.models_reg
+                name: {"MAE": [], "RMSE": [], "R2":[]} for name in self.models_reg
             },
             "Classifiers":{
-                name: {"Accuracy": [], "F1": []}
-                for name in self.models_clf
+                name: {"Accuracy": [], "F1": []} for name in self.models_clf
             }
 
         }
 
-        print("Starting training...")
+        print("Starting Cross-Validation training...")
         for fold, (train_index, test_index) in enumerate(cv.split(X)):
             X_train, X_test = X[train_index], X[test_index]
             y_reg_train, y_reg_test = y_reg[train_index], y_reg[test_index]
+            y_clf_train, y_clf_test = y_clf[train_index], y_clf[test_index]
+
 
             print(f"=== Fold {fold+1}/{splits_n} ===")
             print(f"X_train: {X_train.shape}")
@@ -84,45 +95,60 @@ class ModelManager:
 
                 mae = mean_absolute_error(y_reg_test, y_pred)
                 rmse = np.sqrt(mean_squared_error(y_reg_test, y_pred))
+                r2 = r2_score(y_reg_test, y_pred)
 
-                results["Regressors"][name]["MAE"].append(mae)
-                results["Regressors"][name]["RMSE"].append(rmse)
+                raw_results["Regressors"][name]["MAE"].append(mae)
+                raw_results["Regressors"][name]["RMSE"].append(rmse)
+                raw_results["Regressors"][name]["R2"].append(r2)
 
+                """
                 if fold == splits_n - 1:
                     print(f"Saving regressor model: {name}")
                     path = f"./models/{name}_last_fold.joblib"
                     self.save_model(model_fold, path)
+                """
 
             # ------------Classifiers---------------
             print("\tClassifiers:")
             for name, model in self.models_clf.items():
                 print(f"\t\t{name}")
                 model_fold = clone(model)
-                model_fold.fit(X_train, y_clf[train_index])
+                model_fold.fit(X_train, y_clf_train)
 
                 y_pred = model_fold.predict(X_test)
 
-                acc = accuracy_score(y_clf[test_index], y_pred)
-                f1 = f1_score(y_clf[test_index], y_pred, average='weighted')
+                acc = accuracy_score(y_clf_test, y_pred)
+                f1 = f1_score(y_clf_test, y_pred, average='weighted')
 
-                results["Classifiers"][name]["Accuracy"].append(acc)
-                results["Classifiers"][name]["F1"].append(f1)
+                raw_results["Classifiers"][name]["Accuracy"].append(acc)
+                raw_results["Classifiers"][name]["F1"].append(f1)
 
+                """
                 if fold == splits_n - 1:
                     print(f"Saving classifier model: {name}")
                     path = f"./models/{name}_last_fold.joblib"
                     self.save_model(model_fold, path)
+                """
+
+        # Process results to get mean and std
+        processed_results = {"Regressors": {}, "Classifiers": {}}
+        for group, models in raw_results.items():
+            for name, metrics in models.items():
+                processed_results[group][name] = {
+                    metric:{
+                        "mean": np.mean(values),
+                        "std": np.std(values)
+                    }
+                    for metric, values in metrics.items()
+                }
 
 
-        print("Finished training.")
 
-        self.save_results_json(results, "./metrics/results.json")
-        self.results = results
-        return results
+        print("Finished Cross-Validation.")
 
-    def train_final_model(self, X, y, model_name, save_path=None):
-        pass
-
+        self.save_results_json(processed_results, "./metrics/results.json")
+        self.results = processed_results
+        return processed_results
 
     def plot_cv_results(self, results=None):
         """
@@ -138,36 +164,32 @@ class ModelManager:
             # Get metrics from the first model of the group
             metrics = list(next(iter(models.values())).keys())
             n_metrics = len(metrics)
+            n_models = len(models)
 
-            fig, axes = plt.subplots(
-                n_metrics, 1,
-                figsize=(8, 4 * n_metrics),
-                sharex=True
-            )
-
-            # If only one metric, axes is not iterable
+            fig, axes = plt.subplots(n_metrics, 1, figsize=(10, 5 * n_metrics), sharex=False)
             if n_metrics == 1:
                 axes = [axes]
 
             for ax, metric in zip(axes, metrics):
-                for model_name, model_metrics in models.items():
-                    values = np.array(model_metrics[metric], dtype=float)
-                    folds = np.arange(1, len(values) + 1)
+                model_names = list(models.keys())
+                mean_values = [models[name][metric]["mean"] for name in model_names]
+                std_values = [models[name][metric]["std"] for name in model_names]
 
-                    ax.plot(folds, values, marker="o", label=model_name)
-
+                x_pos = np.arange(n_models)
+                bars = ax.bar(x_pos, mean_values, yerr=std_values, capsize=5, alpha=0.7)
+                ax.set_xticks(x_pos)
+                ax.set_xticklabels(model_names, rotation=45, ha="right")
                 ax.set_ylabel(metric)
-                ax.set_title(f"{group_name} – {metric} per fold")
-                ax.grid(True)
-                ax.legend()
+                ax.set_title(f"Average {metric} for {group_name}")
+                ax.grid(axis='y', linestyle='--')
 
-                # Optional: nicer limits for accuracy-like metrics
-                if metric.lower() in ("accuracy", "f1"):
-                    ax.set_ylim(0.45, 0.65)
+                # Add values on top of bars
+                for bar in bars:
+                    yval = bar.get_height()
+                    ax.text(bar.get_x() + bar.get_width()/2.0, yval, f'{yval:.3f}', va='bottom', ha='center')
 
-            axes[-1].set_xlabel("Fold")
 
-            fig.suptitle(group_name, fontsize=14)
+            fig.suptitle(f'{group_name} Performance Comparison (5-Fold CV)', fontsize=16, y=1.02)
             plt.tight_layout()
-            plt.savefig("./metrics/foo.png")
+            plt.savefig(f"./metrics/{group_name}_performance.png")
             plt.show()
