@@ -5,9 +5,11 @@ import os
 import json
 
 from sklearn.model_selection import KFold
-from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier, GradientBoostingRegressor, GradientBoostingClassifier
+from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import mean_absolute_error, mean_squared_error, accuracy_score, f1_score, r2_score
+from sklearn.tree import DecisionTreeRegressor
+from xgboost import XGBRegressor, XGBClassifier
 from sklearn.base import clone
 
 
@@ -18,19 +20,39 @@ class ModelManager:
         {"NAME": CLASS()}
         """
         self.models_reg = {
-            
-            "LinearRegression": LinearRegression(),
-            "RandomForestRegressor": RandomForestRegressor(random_state=r_state),
-            "GradientBoostingRegressor": GradientBoostingRegressor(random_state=r_state)
-
+            "Linear Regression": LinearRegression(),
+            "Ridge Regression": Ridge(alpha=1.0),
+            "Decision Tree": DecisionTreeRegressor(max_depth=10, random_state=42),
+            "Random Forest": RandomForestRegressor(
+                n_estimators=50,
+                max_depth=15,
+                n_jobs=-1,
+                random_state=42
+            ),
+            "XGBoost": XGBRegressor(
+                n_estimators=100,
+                learning_rate=0.1,
+                max_depth=10,
+                n_jobs=-1,
+                random_state=42
+            )
         }
 
         self.models_clf = {
-            "LogisticRegression": LogisticRegression(random_state=r_state),
-            "RandomForestClassifier": RandomForestClassifier(random_state=r_state),
-            "GradientBoostingClassifier": GradientBoostingClassifier(random_state=r_state)
-
-
+            "Logistic Regression": LogisticRegression(max_iter=1000),
+            "Random Forest Clf": RandomForestClassifier(
+                n_estimators=50, 
+                max_depth=15, 
+                n_jobs=-1, 
+                random_state=42
+            ),
+            "XGBoost Clf": XGBClassifier(
+                n_estimators=100,
+                learning_rate=0.1,
+                max_depth=10,
+                n_jobs=-1,
+                random_state=42
+            )
         }
         self.results = None
 
