@@ -168,16 +168,63 @@ class ModelManager:
 
         print("Finished Cross-Validation.")
 
-        self.save_results_json(processed_results, "./metrics/results.json")
-        self.results = processed_results
+        self.save_results_json(processed_results, "./metrics/procesed_results.json")
+        self.save_results_json(processed_results, "./metrics/raw_results.json")
+        self.processed_results = processed_results
+        self.raw_results = raw_results
         return processed_results
 
     def plot_cv_results(self, results=None):
         """
-            Plot cross-validation results using matplotlib.
+        Plot cross-validation results using matplotlib.
+        Prioritizes Box Plots if raw_results are available, otherwise uses Bar Plots.
         """
+        # 1. Try to use raw_results for Box Plots (Better for CV)
+        if hasattr(self, 'raw_results') and self.raw_results is not None:
+            print("Plotting Box Plots using raw cross-validation results...")
+            for group_name, models in self.raw_results.items():
+                if not models:
+                    continue
+
+                metrics = list(next(iter(models.values())).keys())
+                n_metrics = len(metrics)
+                
+                # Create subplots
+                fig, axes = plt.subplots(n_metrics, 1, figsize=(12, 6 * n_metrics))
+                if n_metrics == 1:
+                    axes = [axes]
+
+                for ax, metric in zip(axes, metrics):
+                    data = []
+                    labels = []
+                    
+                    for name, model_metrics in models.items():
+                        labels.append(name)
+                        data.append(model_metrics[metric])
+                    
+                    # Box Plot
+                    ax.boxplot(data, tick_labels=labels, patch_artist=True)
+                    ax.set_title(f"{group_name} - {metric} Distribution (CV Folds)")
+                    ax.set_ylabel(metric)
+                    ax.grid(True, linestyle='--', alpha=0.6)
+                    
+                    # Rotate x-labels if needed
+                    plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
+
+                fig.tight_layout()
+                save_path = f"./metrics/{group_name}_performance_boxplot.png"
+                plt.savefig(save_path)
+                plt.close(fig) # Close to free memory
+                print(f"Saved plot to {save_path}")
+            return
+
+        # 2. Fallback to Bar Plots if only processed results are available
+        print("Raw results not found. Plotting Bar Charts using aggregated results...")
         if results is None:
-            results = self.results
+            results = self.processed_results
+            if results is None:
+                print("No results to plot.")
+                return
 
         for group_name, models in results.items():
             if not models:
@@ -211,7 +258,9 @@ class ModelManager:
                     ax.text(bar.get_x() + bar.get_width()/2.0, yval, f'{yval:.3f}', va='bottom', ha='center')
 
 
-            fig.suptitle(f'{group_name} Performance Comparison (5-Fold CV)', fontsize=16, y=1.02)
+            fig.suptitle(f'{group_name} Performance Comparison (Mean +/- Std)', fontsize=16, y=1.02)
             plt.tight_layout()
-            plt.savefig(f"./metrics/{group_name}_performance.png")
-            plt.show()
+            save_path = f"./metrics/{group_name}_performance.png"
+            plt.savefig(save_path)
+            plt.close(fig)
+            print(f"Saved plot to {save_path}")

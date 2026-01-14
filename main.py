@@ -3,6 +3,7 @@ from config import X_PREPROCESSED_FILE_PATH, Y_PREPROCESSED_FILE_PATH
 import numpy as np
 
 def main():
+    
     print("Loading data...")
     try:
         X = np.load(X_PREPROCESSED_FILE_PATH)

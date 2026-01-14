@@ -51,7 +51,7 @@ class Preprocessor:
         # Regression target
         y_reg = y.to_numpy()
 
-        # Classification target (3 classes: Low, Medium, High)
+        # Classification target (3 classes: Low, Medium, High) [Depends on the whole dataset, could be biased]
         y_clf = pd.qcut(y, q=3, labels=[0, 1, 2]).to_numpy()
 
         # Save both targets
