@@ -63,6 +63,45 @@ class ModelManager:
     def load_model(self, path):
         return joblib.load(path)
 
+    def save_params(self, params, path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(params, f, indent=4)
+        print(f"Parameters saved to {path}")
+
+    def load_params(self, path):
+        if not os.path.exists(path):
+            print(f"No parameters found at {path}")
+            return None
+        with open(path, "r") as f:
+            return json.load(f)
+
+    def set_params(self, params):
+        if not params:
+            return
+
+        print("Applying tuned parameters...")
+        if "Regressors" in params:
+            for name, model_params in params["Regressors"].items():
+                if name in self.models_reg:
+                    # Convert list back to tuple if needed, though sklearn handles lists for some params
+                    # Only apply params that are valid for the model
+                    try:
+                        self.models_reg[name].set_params(**model_params)
+                        print(f"Updated {name} with loaded parameters.")
+                    except Exception as e:
+                        print(f"Could not update {name}: {e}")
+
+        if "Classifiers" in params:
+             for name, model_params in params["Classifiers"].items():
+                if name in self.models_clf:
+                    try:
+                        self.models_clf[name].set_params(**model_params)
+                        print(f"Updated {name} with loaded parameters.")
+                    except Exception as e:
+                        print(f"Could not update {name}: {e}")
+
+
     def _to_json_safe(self, obj):
         if isinstance(obj, dict):
             return {k: self._to_json_safe(v) for k, v in obj.items()}
@@ -169,7 +208,7 @@ class ModelManager:
         print("Finished Cross-Validation.")
 
         self.save_results_json(processed_results, "./metrics/procesed_results.json")
-        self.save_results_json(processed_results, "./metrics/raw_results.json")
+        self.save_results_json(raw_results, "./metrics/raw_results.json")
         self.processed_results = processed_results
         self.raw_results = raw_results
         return processed_results
@@ -229,6 +268,8 @@ class ModelManager:
         }
 
         # 2. Tune Regressors
+        best_params = {"Regressors": {}, "Classifiers": {}}
+
         print("\nTuning Regressors...")
         for name, model in self.models_reg.items():
             if name in param_grids_reg:
@@ -246,6 +287,7 @@ class ModelManager:
                 print(f"Best params for {name}: {grid_search.best_params_}")
                 # Update the model with the best version
                 self.models_reg[name] = grid_search.best_estimator_
+                best_params["Regressors"][name] = grid_search.best_params_
 
         # 3. Tune Classifiers
         print("\nTuning Classifiers...")
@@ -265,8 +307,11 @@ class ModelManager:
                 print(f"Best params for {name}: {grid_search.best_params_}")
                 # Update the model with the best version
                 self.models_clf[name] = grid_search.best_estimator_
+                best_params["Classifiers"][name] = grid_search.best_params_
         
         print("--- Tuning Complete. Models updated with best parameters. ---\n")
+        return best_params
+
 
     def plot_cv_results(self, results=None):
         """

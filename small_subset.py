@@ -32,6 +32,14 @@ def main():
     print(f"Subset created. X shape: {X_subset.shape}, y_reg shape: {y_reg_subset.shape}, y_clf shape: {y_clf_subset.shape}")
 
     manager = ModelManager(r_state=42)
+
+    # Try to load tuned parameters
+    params_path = "./metrics/tuned_params.json"
+    tuned_params = manager.load_params(params_path)
+    if tuned_params:
+        manager.set_params(tuned_params)
+    else:
+        print("No tuned parameters found. Using default hyperparameters.")
     
     # Train and test models using cross-validation on the subset
     print("Training and testing models on subset...")

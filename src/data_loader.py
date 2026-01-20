@@ -55,10 +55,3 @@ class DataLoader:
         self.data.to_csv(output_filepath, index=False)
 
         return self
-    
-    def get_data_split(self, target='price', test_size=0.2):
-        """Creates the X and y data and split it"""
-        X = self.data.drop(columns=[target])
-        y = self.data[target]
-
-        return train_test_split(X, y, test_size=test_size)

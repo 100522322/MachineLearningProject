@@ -1,10 +1,15 @@
-from src.model_manager import ModelManager
-from config import X_PREPROCESSED_FILE_PATH, Y_PREPROCESSED_FILE_PATH
+import sys
+import os
 import numpy as np
 
+# Add project root to path to allow imports from src and config
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from src.model_manager import ModelManager
+from config import X_PREPROCESSED_FILE_PATH, Y_PREPROCESSED_FILE_PATH
+
 def main():
-    
-    print("Loading data...")
+    print("Loading data for tuning...")
     try:
         X = np.load(X_PREPROCESSED_FILE_PATH)
         y = np.load(Y_PREPROCESSED_FILE_PATH, allow_pickle=True)
@@ -21,21 +26,14 @@ def main():
 
     manager = ModelManager(r_state=42)
     
-    # Try to load tuned parameters
-    params_path = "./metrics/tuned_params.json"
-    tuned_params = manager.load_params(params_path)
-    if tuned_params:
-        manager.set_params(tuned_params)
-    else:
-        print("No tuned parameters found. Using default hyperparameters. Run scripts/tune_models.py to tune.")
-
-    # Train and test models using cross-validation
-    print("Training and testing models...")
-    manager.train_test_models(X, y_clf, y_reg)
+    # Run tuning
+    print("Starting model tuning. This may take a while...")
+    best_params = manager.tune_models(X, y_clf, y_reg)
     
-    # Plot results
-    print("Plotting results...")
-    manager.plot_cv_results()
+    # Save tuned parameters
+    params_path = "./metrics/tuned_params.json"
+    manager.save_params(best_params, params_path)
+    print("Tuning finished.")
 
 if __name__ == "__main__":
     main()
