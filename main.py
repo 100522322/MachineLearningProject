@@ -21,6 +21,9 @@ def main():
 
     manager = ModelManager(r_state=42)
     
+    # Optional: Tune models (this may take time)
+    manager.tune_models(X, y_clf, y_reg)
+
     # Train and test models using cross-validation
     print("Training and testing models...")
     manager.train_test_models(X, y_clf, y_reg)

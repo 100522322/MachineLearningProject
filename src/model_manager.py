@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import json
 
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, GridSearchCV, RandomizedSearchCV
 from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import mean_absolute_error, mean_squared_error, accuracy_score, f1_score, r2_score
@@ -173,6 +173,100 @@ class ModelManager:
         self.processed_results = processed_results
         self.raw_results = raw_results
         return processed_results
+
+    def tune_models(self, X, y_clf, y_reg):
+        """
+        Performs hyperparameter tuning using GridSearchCV.
+        The validation is done internally by GridSearchCV using Cross-Validation.
+        It splits X into 'cv' folds: (cv-1) for training the parameters, 1 for validating them.
+        """
+        print("\n--- Starting Hyperparameter Tuning ---")
+
+        # 1. Define Parameter Grids
+        # These are the parameters we want to test.
+        # You can add more parameters here to test more combinations.
+        param_grids_reg = {
+            "Ridge Regression": {
+                "alpha": [0.1, 1.0, 10.0]
+            },
+            "Decision Tree": {
+                "max_depth": [5, 10, 20, None],
+                "min_samples_split": [2, 5, 10]
+            },
+            "Random Forest": {
+                "n_estimators": [50, 100],
+                "max_depth": [10, 20, None],
+                "min_samples_leaf": [1, 2, 4],
+                "max_features": ['sqrt', 'log2']
+            },
+            "XGBoost": {
+                "n_estimators": [50, 100, 200],
+                "learning_rate": [0.01, 0.1, 0.2],
+                "max_depth": [3, 6, 10],
+                "subsample": [0.8, 1.0],
+                "colsample_bytree": [0.8, 1.0]
+            }
+        }
+
+        param_grids_clf = {
+            "Logistic Regression": {
+                "C": [0.1, 1.0, 10.0],
+                "solver": ['liblinear', 'lbfgs']
+            },
+            "Random Forest Clf": {
+                "n_estimators": [50, 100],
+                "max_depth": [10, 20, None],
+                "min_samples_leaf": [1, 2, 4],
+                "max_features": ['sqrt', 'log2']
+            },
+            "XGBoost Clf": {
+                "n_estimators": [50, 100],
+                "learning_rate": [0.01, 0.1],
+                "max_depth": [3, 6],
+                "subsample": [0.8, 1.0],
+                "colsample_bytree": [0.8, 1.0]
+            }
+        }
+
+        # 2. Tune Regressors
+        print("\nTuning Regressors...")
+        for name, model in self.models_reg.items():
+            if name in param_grids_reg:
+                print(f"Tuning {name}...")
+                grid_search = GridSearchCV(
+                    estimator=model,
+                    param_grid=param_grids_reg[name],
+                    cv=3,           # <--- Validation happens here (3-fold CV)
+                    scoring='neg_mean_squared_error',
+                    n_jobs=1,       # Changed from -1 to 1 to prevent resource error
+                    verbose=1
+                )
+                grid_search.fit(X, y_reg)
+                
+                print(f"Best params for {name}: {grid_search.best_params_}")
+                # Update the model with the best version
+                self.models_reg[name] = grid_search.best_estimator_
+
+        # 3. Tune Classifiers
+        print("\nTuning Classifiers...")
+        for name, model in self.models_clf.items():
+            if name in param_grids_clf:
+                print(f"Tuning {name}...")
+                grid_search = GridSearchCV(
+                    estimator=model,
+                    param_grid=param_grids_clf[name],
+                    cv=3,           # <--- Validation happens here
+                    scoring='accuracy',
+                    n_jobs=1,       # Changed from -1 to 1 to prevent resource error
+                    verbose=1
+                )
+                grid_search.fit(X, y_clf)
+                
+                print(f"Best params for {name}: {grid_search.best_params_}")
+                # Update the model with the best version
+                self.models_clf[name] = grid_search.best_estimator_
+        
+        print("--- Tuning Complete. Models updated with best parameters. ---\n")
 
     def plot_cv_results(self, results=None):
         """
