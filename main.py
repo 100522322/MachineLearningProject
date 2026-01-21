@@ -31,7 +31,7 @@ def main():
 
     # Train and test models using cross-validation
     print("Training and testing models...")
-    manager.train_test_models(X, y_clf, y_reg)
+    manager.train_test_models(X, y_clf, y_reg, splits_n=10)
     
     # Plot results
     print("Plotting results...")
