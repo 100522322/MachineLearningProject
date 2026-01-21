@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import json
 
-from sklearn.model_selection import KFold, GridSearchCV, RandomizedSearchCV
+from sklearn.model_selection import RepeatedKFold, GridSearchCV
 from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.metrics import mean_absolute_error, mean_squared_error, accuracy_score, f1_score, r2_score
@@ -124,8 +124,8 @@ class ModelManager:
 
         print(f"Results saved to {path}")
 
-    def train_test_models(self, X, y_clf, y_reg, splits_n=5):
-        cv = KFold(n_splits=splits_n, shuffle=True, random_state=42)
+    def train_test_models(self, X, y_clf, y_reg, splits_n=5, n_repeats=3):
+        cv = RepeatedKFold(n_splits=splits_n, n_repeats=n_repeats, random_state=42)
         raw_results = {
             "Regressors":{
                 name: {"MAE": [], "RMSE": [], "R2":[]} for name in self.models_reg
@@ -142,8 +142,9 @@ class ModelManager:
             y_reg_train, y_reg_test = y_reg[train_index], y_reg[test_index]
             y_clf_train, y_clf_test = y_clf[train_index], y_clf[test_index]
 
-
-            print(f"=== Fold {fold+1}/{splits_n} ===")
+            repeat_num = fold // splits_n
+            fold_num = fold % splits_n
+            print(f"=== Repeat {repeat_num+1}/{n_repeats} - Fold {fold_num+1}/{splits_n} (Total: {fold+1}/{splits_n * n_repeats}) ===")
             print(f"X_train: {X_train.shape}")
 
             # -------------Regressors----------------
@@ -223,7 +224,6 @@ class ModelManager:
 
         # 1. Define Parameter Grids
         # These are the parameters we want to test.
-        # You can add more parameters here to test more combinations.
         param_grids_reg = {
             "Ridge Regression": {
                 "alpha": [0.1, 1.0, 10.0]
@@ -279,7 +279,7 @@ class ModelManager:
                     param_grid=param_grids_reg[name],
                     cv=3,           # <--- Validation happens here (3-fold CV)
                     scoring='neg_mean_squared_error',
-                    n_jobs=1,       # Changed from -1 to 1 to prevent resource error
+                    n_jobs=1,
                     verbose=1
                 )
                 grid_search.fit(X, y_reg)

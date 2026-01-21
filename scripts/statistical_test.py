@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import wilcoxon
 from statsmodels.stats.multitest import multipletests
-from config import RAW_RESULTS_PATH
+from config import TUNNED_RAW_RESULTS_PATH, BASE_RAW_RESULTS_PATH 
 
 def load_results(path):
     with open(path, 'r') as file:
@@ -26,12 +26,14 @@ def perform_statistical_analysis(data, metric="RMSE"):
     # Pairwise Wilcoxon tests
     comparisons = []
     p_values = []
+    statistics = []
     other_models = [m for m in model_scores.keys() if m != best_model]
 
     for other_model in other_models:
         stat, p = wilcoxon(model_scores[best_model], model_scores[other_model])
         comparisons.append(other_model)
         p_values.append(p)
+        statistics.append(stat)
     
     # Correction of Holm-Bonferroni
     reject, pvals_corrected, _, _ = multipletests(p_values, alpha=0.05, method='holm')
@@ -39,6 +41,7 @@ def perform_statistical_analysis(data, metric="RMSE"):
     # DataFrame for results
     results_df = pd.DataFrame({
         "Model": comparisons,
+        "Statistic": statistics,
         "p-value": p_values,
         "Corrected p-value": pvals_corrected,
         "Significant": ["Yes" if r else "No" for r in reject]
@@ -59,14 +62,15 @@ def render_mpl_table(df, best_model_name, filename):
     for row in df.itertuples(index=False):
         formatted_row = [
             row[0],
-            f"{row[1]:.2e}" if row[1] < 0.001 else f"{row[1]:.4f}",
+            f"{row[1]:.4f}",
             f"{row[2]:.2e}" if row[2] < 0.001 else f"{row[2]:.4f}",
-            row[3]
+            f"{row[3]:.2e}" if row[3] < 0.001 else f"{row[3]:.4f}",
+            row[4]
         ]
         cell_text.append(formatted_row)
 
     table = ax.table(cellText=cell_text,
-                     colLabels=["Model Compared", "Original p-value", "Adj. p-value (Holm)", "Significant Diff?"],
+                     colLabels=["Model Compared", "Test Statistic", "Original p-value", "Adj. p-value (Holm)", "Significant Diff?"],
                      loc='center',
                      cellLoc='center')
 
@@ -102,7 +106,7 @@ def save_results_to_json(df, best_model_name, filename):
     print(f"JSON data saved to {filename}")
 
 if __name__ == "__main__":
-    data = load_results(RAW_RESULTS_PATH)
+    data = load_results(TUNNED_RAW_RESULTS_PATH)
     best, df = perform_statistical_analysis(data, metric="RMSE")
     render_mpl_table(df, best, "./metrics/statistical_test/wilcoxon_holm_comparison.png")
     save_results_to_json(df, best, "./metrics/statistical_test/wilcoxon_holm_comparison.json")

@@ -1,0 +1,43 @@
+{
+    "Regressors": {
+        "Ridge Regression": {
+            "alpha": 1.0
+        },
+        "Decision Tree": {
+            "max_depth": 20,
+            "min_samples_split": 10
+        },
+        "Random Forest": {
+            "max_depth": null,
+            "max_features": "sqrt",
+            "min_samples_leaf": 1,
+            "n_estimators": 100
+        },
+        "XGBoost": {
+            "colsample_bytree": 1.0,
+            "learning_rate": 0.2,
+            "max_depth": 10,
+            "n_estimators": 200,
+            "subsample": 0.8
+        }
+    },
+    "Classifiers": {
+        "Logistic Regression": {
+            "C": 0.1,
+            "solver": "lbfgs"
+        },
+        "Random Forest Clf": {
+            "max_depth": null,
+            "max_features": "sqrt",
+            "min_samples_leaf": 1,
+            "n_estimators": 100
+        },
+        "XGBoost Clf": {
+            "colsample_bytree": 0.8,
+            "learning_rate": 0.01,
+            "max_depth": 6,
+            "n_estimators": 50,
+            "subsample": 0.8
+        }
+    }
+}

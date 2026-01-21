@@ -1,0 +1,33 @@
+{
+    "best_model": "XGBoost",
+    "comparisons": [
+        {
+            "Model": "Linear Regression",
+            "Statistic": 0.0,
+            "p-value": 1.862645149230957e-09,
+            "Corrected p-value": 7.450580596923828e-09,
+            "Significant": "Yes"
+        },
+        {
+            "Model": "Ridge Regression",
+            "Statistic": 0.0,
+            "p-value": 1.862645149230957e-09,
+            "Corrected p-value": 7.450580596923828e-09,
+            "Significant": "Yes"
+        },
+        {
+            "Model": "Decision Tree",
+            "Statistic": 0.0,
+            "p-value": 1.862645149230957e-09,
+            "Corrected p-value": 7.450580596923828e-09,
+            "Significant": "Yes"
+        },
+        {
+            "Model": "Random Forest",
+            "Statistic": 0.0,
+            "p-value": 1.862645149230957e-09,
+            "Corrected p-value": 7.450580596923828e-09,
+            "Significant": "Yes"
+        }
+    ]
+}
