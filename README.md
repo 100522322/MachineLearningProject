@@ -10,6 +10,8 @@ Kaggle db: https://www.kaggle.com/datasets/austinreese/craigslist-carstrucks-dat
 3. Run the data preprocessing script: `python -m scripts.data_preprocessing`
 4. Run the model tuning script: `python -m scripts.tune_models`
 5. Run the main script: `python main.py`
+6. Run the feature importance script: `python -m scripts.feature_importance`
+7. Run the statistical test script: `python -m scripts.statistical_test`
 
 ## How was constructed
 Different classes were created to handle different tasks:
@@ -48,11 +50,23 @@ It has the following methods:
 - `save_preprocessed_data`: Saves the preprocessed data to a .npy file
 
 ### Scripts
-- `data_clean_script.py`: Cleans the data
-- `data_preprocessing.py`: Preprocesses the data
-- `tune_models.py`: Tunes the models and saves the parameters
+- `scripts/data_clean_script.py`: Cleans the data
+- `scripts/data_preprocessing.py`: Preprocesses the data
+- `scripts/tune_models.py`: Tunes the models and saves the parameters
+- `scripts/statistical_test`: Performs statistical tests for the XGBoost model
+- `scripts/feature_importance.py`: Plots the feature importance for the XGBoost model
+
 - `main.py`: Main script to run the models
 - `small_subset.py`: Makes the same as main.py but with a small subset of the data for testing the code
 
 ## Results
 Once the code is run, the following results are generated:
+
+### Metrics
+In this folder there will be two boxplots one for regressors and other for classifiers.
+And also two json files, with the means of each metric for each model and the raw results of the cross-validation.
+
+- `Classifier_performance_boxplot.png`
+- `Regressor_performance_boxplot.png`
+- `processed_results.json`
+- `raw_results.json`
